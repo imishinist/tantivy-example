@@ -2,7 +2,7 @@
 extern crate tantivy;
 use rand::{distributions::Alphanumeric, Rng};
 use tantivy::collector::TopDocs;
-use tantivy::query::QueryParser;
+use tantivy::query::{PhraseQuery, QueryParser};
 use tantivy::schema::*;
 use tantivy::Index;
 use tantivy::ReloadPolicy;
@@ -17,8 +17,8 @@ fn rand_string(n: usize) -> String {
 }
 
 fn main() -> tantivy::Result<()> {
-    let chars = 4;
-    let n = 1_000_000;
+    let chars = 2;
+    let n = 1_000;
     let index_path = TempDir::new()?;
 
     let mut schema_builder = Schema::builder();
@@ -65,7 +65,10 @@ fn main() -> tantivy::Result<()> {
             .read_line(&mut query_string)
             .expect("failed to read line");
 
-        let query = query_parser.parse_query(query_string.as_str())?;
+        let mut terms = Vec::new();
+        terms.push(Term::from_field_text(body, "ab"));
+        terms.push(Term::from_field_text(body, "cd"));
+        let query = PhraseQuery::new(terms);
         let top_docs = searcher.search(&query, &TopDocs::with_limit(10))?;
 
         for (_score, doc_address) in top_docs {
